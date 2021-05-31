@@ -1,0 +1,20 @@
+---
+title: "Yamaha FZ6N Fuel Efficiency"
+author: "P. Melloy"
+date: "01/06/2021"
+output: html_document
+---
+
+```{r libraries}
+library(googlesheets4)
+```
+
+The data for logging refueling data is collected by a google form and saved to a google sheet.
+I am using the package `googlesheets4` to import the data with `
+
+```{r data}
+# indicate no authorisation is needed for the read only link
+gs4_deauth() 
+fuel <- read_sheet("https://docs.google.com/spreadsheets/d/1yEOMwOPqYLhcliRsHKjOXYl3GJNIsdgHYhQwObVAioU/edit?usp=sharing")
+```
+
