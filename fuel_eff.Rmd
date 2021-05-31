@@ -8,6 +8,7 @@ output: html_document
 ```{r libraries}
 library(googlesheets4)
 library(data.table)
+library(ggplot2)
 ```
 
 The data for logging refueling data is collected by a google form and saved to a google sheet.
@@ -36,10 +37,39 @@ setnames(fuel,
 ```
 All the data looks in the correct range
 
+```{r}
+fuel[,octane := as.integer(octane)]
+```
+
 
 Create a column for fuel efficiency, liters per km
 ```{r vol_km}
 fuel[,eff := refuel_L/km]
 ```
 
+offset octane to line up with efficiency
+```{r}
+fuel[, octane := c(NA, fuel[1:(.N-1),octane])]
+```
+
+plot efficiency
+```{r}
+fuel %>%
+   ggplot(aes(y = eff, x = factor(octane)))+
+   geom_boxplot()
+```
+
+cost per km
+```{r}
+# offset price
+fuel[, price := c(NA, fuel[1:(.N-1),price])]
+
+fuel[, costKm := (refuel_L * price)/km]
+
+
+fuel %>%
+   ggplot(aes(y = costKm, x = factor(octane)))+
+   geom_boxplot()
+
+```
 
