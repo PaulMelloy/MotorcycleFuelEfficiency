@@ -7,6 +7,7 @@ output: html_document
 
 ```{r libraries}
 library(googlesheets4)
+library(data.table)
 ```
 
 The data for logging refueling data is collected by a google form and saved to a google sheet.
@@ -15,6 +16,30 @@ I am using the package `googlesheets4` to import the data with `
 ```{r data}
 # indicate no authorisation is needed for the read only link
 gs4_deauth() 
-fuel <- read_sheet("https://docs.google.com/spreadsheets/d/1yEOMwOPqYLhcliRsHKjOXYl3GJNIsdgHYhQwObVAioU/edit?usp=sharing")
+
+# import data
+fuel <- setDT(read_sheet("https://docs.google.com/spreadsheets/d/1yEOMwOPqYLhcliRsHKjOXYl3GJNIsdgHYhQwObVAioU/edit?usp=sharing"))
+
+# save a copy of raw data
+fwrite(fuel, "data/fuel_dat.csv")
 ```
+
+I need to inspect the data for any issues to ensure it's integrety
+```{r}
+summary(fuel)
+
+setnames(fuel,
+         old = colnames(fuel),
+         new = c("ts", "refuel_date", "octane", "refuel_L", "price", "km",
+                 "highwayP", "brand","price_e10", "price_91", "price_95",
+                 "price_98", "notes"))
+```
+All the data looks in the correct range
+
+
+Create a column for fuel efficiency, liters per km
+```{r vol_km}
+fuel[,eff := refuel_L/km]
+```
+
 
