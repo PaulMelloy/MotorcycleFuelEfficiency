@@ -35,15 +35,51 @@ fuel[,`Servo Brand` := unlist(`Servo Brand`)]
 fwrite(fuel, "data/fuel_dat.csv")
 ```
 
-I need to inspect the data for any issues to ensure it's integrety
+```{r colnames}
+setnames(fuel, old = colnames(fuel),
+         c("timestamp",
+           "date",
+           "octane",
+           "refuel_L",
+           "price",
+           "km",
+           "percent_highway",
+           "station",
+           "price_e10", 
+           "price_91", 
+           "price_95",
+           "price_98",
+           "notes"
+           ))
+
+```
+
+Correct data input error 
+
+```{r}
+fuel[octane >100, octane := 94]
+```
+
+
+```{r data_type}
+# set data.types
+fuel[, station := as.character(station)]
+fuel[, octane := as.integer(octane)]
+fuel[, station := casefold(station,upper = FALSE)]
+
+# calculate efficiency
+fuel[,eff := refuel_L/km]
+```
+
+Offset octane and price data to line up with efficiency
+```{r}
+fuel[, octane := c(NA, fuel[1:(.N-1),octane])]
+fuel[, price := c(NA, fuel[1:(.N-1),price])]
+```
+
+Inspect the data for any issues to ensure it's integrity
 ```{r}
 summary(fuel)
-
-setnames(fuel,
-         old = colnames(fuel),
-         new = c("ts", "refuel_date", "octane", "refuel_L", "price", "km",
-                 "highwayP", "brand","price_e10", "price_91", "price_95",
-                 "price_98", "notes"))
 ```
 All the data looks in the correct range
 
@@ -61,6 +97,8 @@ fuel[,eff := refuel_L/km]
 offset octane to line up with efficiency
 ```{r}
 fuel[, octane := c(NA, fuel[1:(.N-1),octane])]
+# save a copy of amended data
+fwrite(fuel, "data/fuel_dat.csv")
 ```
 
 plot efficiency
@@ -72,8 +110,6 @@ fuel %>%
 
 cost per km
 ```{r}
-# offset price
-fuel[, price := c(NA, fuel[1:(.N-1),price])]
 
 fuel[, costKm := (refuel_L * price)/km]
 
@@ -81,6 +117,24 @@ fuel[, costKm := (refuel_L * price)/km]
 fuel %>%
    ggplot(aes(y = costKm, x = factor(octane)))+
    geom_boxplot()
+
+```
+
+```{r}
+library(lme4)
+
+mod1 <- lmer(costKm ~ octane + percent_highway + (1|station),data = fuel)
+summary(mod1)
+```
+
+
+```{r}
+ranef(mod1)
+```
+
+```{r}
+mod2 <- lmer(costKm ~ as.factor(octane) * percent_highway + (1|station),data = fuel)
+summary(mod2)
 
 ```
 
