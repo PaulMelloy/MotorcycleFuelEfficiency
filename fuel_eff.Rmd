@@ -21,6 +21,16 @@ gs4_deauth()
 # import data
 fuel <- setDT(read_sheet("https://docs.google.com/spreadsheets/d/1yEOMwOPqYLhcliRsHKjOXYl3GJNIsdgHYhQwObVAioU/edit?usp=sharing"))
 
+# remove Null list entries
+for(i in seq_len(nrow(fuel))){
+   if(is.null(fuel$`Servo Brand`[[i]])){
+      cat(fuel$`Servo Brand`[[i]])
+      fuel$`Servo Brand`[[i]] <- NA_character_
+   }
+}
+fuel[,`Servo Brand` := unlist(`Servo Brand`)]
+
+
 # save a copy of raw data
 fwrite(fuel, "data/fuel_dat.csv")
 ```
@@ -38,6 +48,7 @@ setnames(fuel,
 All the data looks in the correct range
 
 ```{r}
+fuel[ octane >100,ocatane := 94]
 fuel[,octane := as.integer(octane)]
 ```
 
