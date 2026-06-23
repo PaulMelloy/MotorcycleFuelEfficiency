@@ -5,7 +5,7 @@ account: paulmelloy
 server: shinyapps.io
 hostUrl: https://api.shinyapps.io/v1
 appId: 17541082
-bundleId: 12164638
+bundleId: 12165223
 url: https://paulmelloy.shinyapps.io/Fuel_efficiency_FZ6N/
 version: 1
 asMultiple: FALSE
