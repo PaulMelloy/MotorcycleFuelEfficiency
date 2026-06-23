@@ -524,22 +524,22 @@ server <- function(input, output, session) {
     df <- octane_with_n(fdata())
     validate(need(nrow(df) > 0, "No data."))
 
-    p <- ggplot(df, aes(y = oct_label, x = L_per_100km,
-                        fill = oct_chr,
-                        text = paste0(
-                          "Octane: ",  oct_chr, "\n",
-                          "Economy: ", round(L_per_100km, 2), " L/100km\n",
-                          "Date: ",    date
-                        ))) +
+    # Use coord_flip() — ggplotly handles this orientation far more reliably
+    # than native horizontal boxplots (aes(y = factor, x = continuous)).
+    # Drop the text aesthetic so plotly shows its own box-statistics tooltip
+    # (median, Q1/Q3, fences) which is more informative than per-row values.
+    p <- ggplot(df, aes(x = oct_label, y = L_per_100km, fill = oct_chr)) +
       geom_boxplot(alpha = 0.8, outlier.shape = 21, outlier.alpha = 0.6,
                    outlier.size = 1.8) +
       scale_fill_manual(values = CB_COLS, guide = "none", na.value = "grey70") +
-      labs(y = NULL, x = "L / 100 km",
+      scale_x_discrete(limits = rev) +   # 91 at top, 98 at bottom after flip
+      coord_flip() +
+      labs(x = NULL, y = "L / 100 km",
            title = "Economy by Fuel Type  (lower = better)") +
       theme_minimal(base_size = 13) +
       theme(plot.title = element_text(size = 13))
 
-    ggplotly(p, tooltip = "text")
+    ggplotly(p)
   })
 
   # ── Cost per km by octane — horizontal boxplot with N ─────────────────────
@@ -550,22 +550,18 @@ server <- function(input, output, session) {
 
     validate(need(nrow(df) > 0, "No data."))
 
-    p <- ggplot(df, aes(y = oct_label, x = cpm,
-                        fill = oct_chr,
-                        text = paste0(
-                          "Octane: ", oct_chr, "\n",
-                          "Cost: ",   round(cpm, 2), " c/km\n",
-                          "Date: ",   date
-                        ))) +
+    p <- ggplot(df, aes(x = oct_label, y = cpm, fill = oct_chr)) +
       geom_boxplot(alpha = 0.8, outlier.shape = 21, outlier.alpha = 0.6,
                    outlier.size = 1.8) +
       scale_fill_manual(values = CB_COLS, guide = "none", na.value = "grey70") +
-      labs(y = NULL, x = "Cents per km",
+      scale_x_discrete(limits = rev) +
+      coord_flip() +
+      labs(x = NULL, y = "Cents per km",
            title = "Cost per km by Fuel Type") +
       theme_minimal(base_size = 13) +
       theme(plot.title = element_text(size = 13))
 
-    ggplotly(p, tooltip = "text")
+    ggplotly(p)
   })
 
   # ── Station comparison ─────────────────────────────────────────────────────
