@@ -1,0 +1,17 @@
+:8081 {
+	# Serve the Shiny app under a URL path prefix.
+	# Cloudflare Tunnel forwards the original full path; handle_path strips
+	# the /shiny/MotorcycleFuelEfficiency prefix before proxying to shiny,
+	# which knows nothing about the prefix (shiny can't mount on subpaths).
+	# This works because shiny emits RELATIVE asset URLs and derives its
+	# websocket path from the page URL — the browser stays inside the prefix.
+	#
+	# Plain HTTP by design: TLS terminates at the Cloudflare edge.
+
+	redir / /shiny/MotorcycleFuelEfficiency/ 302
+	redir /shiny/MotorcycleFuelEfficiency /shiny/MotorcycleFuelEfficiency/ 302
+
+	handle_path /shiny/MotorcycleFuelEfficiency/* {
+		reverse_proxy shiny:3838
+	}
+}

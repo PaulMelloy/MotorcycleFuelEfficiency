@@ -1,0 +1,6 @@
+.git
+*.Rproj
+README.md
+LICENSE
+fuel_eff.Rmd
+fuel_eff.html
