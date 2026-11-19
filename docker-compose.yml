@@ -1,0 +1,45 @@
+# Canonical hermpi instance: ~/selfhost/motorcycle-fuel-efficiency
+# (container names are pinned — don't compose-up this stack from a second copy).
+name: motorcycle-fuel-efficiency
+
+services:
+  shiny:
+    build: .
+    image: motorcycle-fuel-efficiency:1.0
+    container_name: fz6-shiny
+    restart: unless-stopped
+    # Internal only — the proxy in front owns the published port.
+    volumes:
+      - ./data:/srv/shiny/data:ro        # CSV fallback cache, editable without rebuild
+    environment:
+      - TZ=Australia/Brisbane
+    healthcheck:
+      test: ["CMD", "curl", "-sf", "http://localhost:3838/"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 30s
+    networks: [appnet]
+
+  proxy:
+    image: caddy:2-alpine
+    container_name: fz6-caddy
+    restart: unless-stopped
+    ports:
+      - "3838:8081"                      # plain HTTP; Cloudflare Tunnel targets this
+    volumes:
+      - ./Caddyfile:/etc/caddy/Caddyfile:ro
+    depends_on:
+      shiny:
+        condition: service_healthy
+    healthcheck:
+      test: ["CMD", "wget", "-qO-", "http://localhost:8081/shiny/MotorcycleFuelEfficiency/"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 10s
+    networks: [appnet]
+
+networks:
+  appnet:
+    name: fz6-net

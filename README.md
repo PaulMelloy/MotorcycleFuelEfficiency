@@ -54,7 +54,9 @@ MotorcycleFuelEfficiency/
 ├── data/
 │   └── fuel_dat.csv   # Local CSV cache (fallback if Sheets is unreachable)
 ├── fuel_eff.Rmd       # Exploratory analysis notebook
-├── DEPLOY.md          # Step-by-step shinyapps.io deployment guide
+├── Dockerfile         # Container image (rocker/r2u, multi-arch: amd64 + arm64)
+├── docker-compose.yml # App + Caddy path-prefix proxy stack
+├── Caddyfile          # Serves the app under /shiny/MotorcycleFuelEfficiency/
 └── README.md
 ```
 
@@ -86,6 +88,36 @@ shiny::runApp("FZ6_fueleff")
 ```
 
 The app reads live from Google Sheets by default. If the sheet is unreachable it falls back to `data/fuel_dat.csv`.
+
+---
+
+## Docker deployment
+
+One command builds and runs the dashboard with a path-prefix proxy in front:
+
+```bash
+docker compose up -d --build
+# -> http://localhost:3838/shiny/MotorcycleFuelEfficiency/
+```
+
+| Piece | Role |
+|---|---|
+| `Dockerfile` | R + Shiny image based on `rocker/r2u` (binary apt packages, **multi-arch**: runs on x86 servers and ARM Raspberry Pi; `rocker/shiny` is amd64-only) |
+| `proxy` (Caddy) | Publishes port 3838 and strips the `/shiny/MotorcycleFuelEfficiency` prefix before forwarding to Shiny. Needed because Shiny itself cannot mount an app on a subpath — but it emits *relative* asset URLs and derives its websocket path from the page URL, so a strip-prefix proxy works cleanly |
+| `./data` mount | `data/fuel_dat.csv` is bind-mounted read-only into the container, so the fallback cache can be refreshed on the host without rebuilding the image |
+
+Plain HTTP only: TLS is expected to terminate at a reverse proxy or Cloudflare Tunnel in front of it.
+
+Example Cloudflare Tunnel ingress rule (forward the full path; Caddy strips it):
+
+```yaml
+ingress:
+  - hostname: apps.example.com
+    path: ^/shiny/MotorcycleFuelEfficiency
+    service: http://localhost:3838
+```
+
+Code changes require a rebuild (`docker compose up -d --build`) because the app source is baked into the image.
 
 ---
 
